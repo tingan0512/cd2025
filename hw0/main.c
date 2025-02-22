@@ -23,7 +23,7 @@ void initHashTable() {
 }
 
 // 使用雜湊表查找字元，O(1)
-int findChar(int head, char c) {
+int findChar(char c) {
     return hashTable[(unsigned char)c];
 }
 
@@ -43,7 +43,7 @@ int createNode(char c) {
 }
 
 int processChar(int head, char c) {
-    int existingNode = findChar(head, c);
+    int existingNode = findChar(c);
     
     if (existingNode != -1) {
         nodePool[existingNode].count++;
@@ -94,4 +94,3 @@ int main() {
     
     return 0;
 }
-
