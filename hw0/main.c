@@ -2,7 +2,6 @@
 #include <string.h>
 
 #define MAX_NODES 1000
-#define HASH_SIZE 128  // ASCII 字元範圍
 
 typedef struct Node {
     char character;
@@ -10,87 +9,83 @@ typedef struct Node {
     int next;
 } Node;
 
-Node nodePool[MAX_NODES];
+Node nodes[MAX_NODES];
 int freeIndex = 0;
-int hashTable[HASH_SIZE];  // 新增雜湊表，儲存每個字元對應的節點索引
 
-// 初始化雜湊表
-void initHashTable() {
-    int i;
-    for (i = 0; i < HASH_SIZE; i++) {
-        hashTable[i] = -1;
-    }
-}
-
-// 使用雜湊表查找字元，O(1)
-int findChar(char c) {
-    return hashTable[(unsigned char)c];
+// 檢查是否為有效的 ASCII 字元
+int isValidChar(char c) {
+    // 只處理可見的 ASCII 字元 (33-126)
+    return c >= 33 && c <= 126;
 }
 
 int createNode(char c) {
     if (freeIndex >= MAX_NODES) {
         return -1;
     }
-    
-    nodePool[freeIndex].character = c;
-    nodePool[freeIndex].count = 1;
-    nodePool[freeIndex].next = -1;
-    
-    // 更新雜湊表
-    hashTable[(unsigned char)c] = freeIndex;
-    
+    nodes[freeIndex].character = c;
+    nodes[freeIndex].count = 1;
+    nodes[freeIndex].next = -1;
     return freeIndex++;
 }
 
-int processChar(int head, char c) {
-    int existingNode = findChar(c);
-    
-    if (existingNode != -1) {
-        nodePool[existingNode].count++;
+int findChar(int head, char c) {
+    int current = head;
+    while (current != -1) {
+        if (nodes[current].character == c) {
+            return current;
+        }
+        current = nodes[current].next;
+    }
+    return -1;
+}
+
+int insertOrUpdate(int head, char c) {
+    if (!isValidChar(c)) {
         return head;
     }
     
-    int newNodeIndex = createNode(c);
-    if (newNodeIndex == -1) {
+    int existingNode = findChar(head, c);
+    if (existingNode != -1) {
+        nodes[existingNode].count++;
+        return head;
+    }
+    
+    int newNode = createNode(c);
+    if (newNode == -1) {
         return head;
     }
     
     if (head == -1) {
-        return newNodeIndex;
+        return newNode;
     }
     
     int current = head;
-    while (nodePool[current].next != -1) {
-        current = nodePool[current].next;
+    while (nodes[current].next != -1) {
+        current = nodes[current].next;
     }
-    nodePool[current].next = newNodeIndex;
+    nodes[current].next = newNode;
     return head;
-}
-
-void printList(int head) {
-    int current = head;
-    while (current != -1) {
-        printf("%c : %d\n", 
-            nodePool[current].character, 
-            nodePool[current].count);
-        current = nodePool[current].next;
-    }
 }
 
 int main() {
     int head = -1;
-    char input[] = "#hello##oooyahaha";
-    int len = strlen(input);
-    int i;
+    char c;
     
-    // 初始化雜湊表
-    initHashTable();
-    
-    for (i = 0; i < len; i++) {
-        head = processChar(head, input[i]);
+    FILE* file = fopen("main.c", "r");
+    if (file == NULL) {
+        return 1;
     }
     
-    printList(head);
+    while ((c = fgetc(file)) != EOF) {
+        head = insertOrUpdate(head, c);
+    }
     
+    int current = head;
+    while (current != -1) {
+        printf("%c : %d\n", nodes[current].character, nodes[current].count);
+        current = nodes[current].next;
+    }
+    
+    fclose(file);
     return 0;
 }
