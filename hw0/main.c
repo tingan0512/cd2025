@@ -1,16 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-
-#define MAX_NODES 1000
 
 typedef struct Node {
     char character;
     int count;
-    int next;
+    struct Node* next;
 } Node;
-
-Node nodes[MAX_NODES];
-int freeIndex = 0;
 
 // 檢查是否為有效的 ASCII 字元
 int isValidChar(char c) {
@@ -18,61 +14,73 @@ int isValidChar(char c) {
     return c >= 33 && c <= 126;
 }
 
-int createNode(char c) {
-    if (freeIndex >= MAX_NODES) {
-        return -1;
+Node* createNode(char c) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    if (newNode == NULL) {
+        fprintf(stderr, "記憶體配置失敗\n");
+        return NULL;
     }
-    nodes[freeIndex].character = c;
-    nodes[freeIndex].count = 1;
-    nodes[freeIndex].next = -1;
-    return freeIndex++;
+    newNode->character = c;
+    newNode->count = 1;
+    newNode->next = NULL;
+    return newNode;
 }
 
-int findChar(int head, char c) {
-    int current = head;
-    while (current != -1) {
-        if (nodes[current].character == c) {
+Node* findChar(Node* head, char c) {
+    Node* current = head;
+    while (current != NULL) {
+        if (current->character == c) {
             return current;
         }
-        current = nodes[current].next;
+        current = current->next;
     }
-    return -1;
+    return NULL;
 }
 
-int insertOrUpdate(int head, char c) {
+Node* insertOrUpdate(Node* head, char c) {
     if (!isValidChar(c)) {
         return head;
     }
     
-    int existingNode = findChar(head, c);
-    if (existingNode != -1) {
-        nodes[existingNode].count++;
+    Node* existingNode = findChar(head, c);
+    if (existingNode != NULL) {
+        existingNode->count++;
         return head;
     }
     
-    int newNode = createNode(c);
-    if (newNode == -1) {
+    Node* newNode = createNode(c);
+    if (newNode == NULL) {
         return head;
     }
     
-    if (head == -1) {
+    if (head == NULL) {
         return newNode;
     }
     
-    int current = head;
-    while (nodes[current].next != -1) {
-        current = nodes[current].next;
+    Node* current = head;
+    while (current->next != NULL) {
+        current = current->next;
     }
-    nodes[current].next = newNode;
+    current->next = newNode;
     return head;
 }
 
+void freeList(Node* head) {
+    Node* current = head;
+    while (current != NULL) {
+        Node* next = current->next;
+        free(current);
+        current = next;
+    }
+}
+
 int main() {
-    int head = -1;
+    Node* head = NULL;
     char c;
     
     FILE* file = fopen("main.c", "r");
     if (file == NULL) {
+        fprintf(stderr, "無法開啟檔案\n");
         return 1;
     }
     
@@ -80,12 +88,13 @@ int main() {
         head = insertOrUpdate(head, c);
     }
     
-    int current = head;
-    while (current != -1) {
-        printf("%c : %d\n", nodes[current].character, nodes[current].count);
-        current = nodes[current].next;
+    Node* current = head;
+    while (current != NULL) {
+        printf("%c : %d\n", current->character, current->count);
+        current = current->next;
     }
     
     fclose(file);
+    freeList(head);
     return 0;
 }
